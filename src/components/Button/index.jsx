@@ -7,7 +7,7 @@ export class Button extends React.Component {
         return (
             <button
                 className="button"
-                disabled= {disabled}
+                disabled={disabled}
                 onClick={onClick}>
                 {text}
             </button>
