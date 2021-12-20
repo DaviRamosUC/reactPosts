@@ -3,6 +3,8 @@ import { setupServer } from 'msw/node';
 import { render, screen, waitForElementToBeRemoved } from '@testing-library/react';
 import Home from '.';
 
+import userEvent from '@testing-library/user-event';
+
 const handlers = [
   rest.get('https://jsonplaceholder.typicode.com/posts', async (req, res, ctx) => {
     return res(
@@ -10,7 +12,7 @@ const handlers = [
         {
           userId: 1,
           id: 1,
-          title: 'title 1',
+          title: 'title 1 1',
           body: 'body 1',
         },
         {
@@ -75,7 +77,45 @@ describe('<Home />', () => {
     render(<Home />);
     const noMorePosts = screen.getByText('Não existem posts =(');
 
+    expect.assertions(3);
+
     await waitForElementToBeRemoved(noMorePosts);
-    screen.debug();
+
+    const search = screen.getByPlaceholderText(/Type your search/i);
+    expect(search).toBeInTheDocument();
+
+    const images = screen.getAllByRole('img', { name: /title/i });
+    expect(images).toHaveLength(2);
+
+    const button = screen.getByRole('button', { name: /load more posts/i });
+    expect(button).toBeInTheDocument();
+  });
+
+  it('should search for posts', async () => {
+    render(<Home />);
+    const noMorePosts = screen.getByText('Não existem posts =(');
+
+    expect.assertions(10);
+
+    await waitForElementToBeRemoved(noMorePosts);
+
+    const search = screen.getByPlaceholderText(/Type your search/i);
+
+    expect(screen.getByRole('heading', { name: /title 1 1/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /title 2/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /title 3/i })).not.toBeInTheDocument();
+
+    userEvent.type(search, 'title 1');
+    expect(screen.getByRole('heading', { name: /title 1 1/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /title 2/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /title 3/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Search Value: title 1/i })).toBeInTheDocument();
+
+    userEvent.clear(search);
+    expect(screen.getByRole('heading', { name: /title 1 1/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /title 2/i })).toBeInTheDocument();
+
+    userEvent.type(search, 'posts do not exists');
+    expect(screen.getByText('Não existem posts =(')).toBeInTheDocument();
   });
 });
